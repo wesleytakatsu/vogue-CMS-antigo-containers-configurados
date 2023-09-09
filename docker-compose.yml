@@ -1,0 +1,61 @@
+version: '3'
+services:
+    databasevogue:
+      image: mariadb:latest
+      # image: mysql:latest
+      restart: always
+      ports:
+      - "${DB_PORT:-3306}:3306"
+      environment:
+        MYSQL_ROOT_HOST: "%"
+        MYSQL_ROOT_PASSWORD: '${DB_PASSWORD:-root}'
+        # MYSQL_DATABASE: '${DB_DATABASE:-arquivos}'
+        MYSQL_USER: '${DB_USERNAME:-root}'
+        MYSQL_PASSWORD: '${DB_PASSWORD:-root}'
+        MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+      volumes:
+        - './database_data:/var/lib/mysql'
+      networks:
+        - servidorwebvogue
+      container_name: servidor_web_mysql
+
+    phpmyadminvogue:
+        image: phpmyadmin/phpmyadmin
+        container_name: servidor_web_phpmyadmin
+        environment:
+          PMA_HOST: databasevogue
+          PMA_PORT: '${DB_PORT:-3306}'
+          PMA_USER: '${DB_USERNAME:-root}'
+          PMA_PASSWORD: '${DB_PASSWORD:-root}'
+        ports:
+          - 8080:80
+        networks:
+          - servidorwebvogue
+        depends_on:
+          - databasevogue
+
+
+    servidorphpvogue:
+        image: php:7.4-apache
+        build:
+          context: .
+          dockerfile: Dockerfile
+        container_name: servidor_web_php
+        ports:
+          - '${APP_PORT:-80}:80'
+        volumes:
+          - './arquivos_php:/var/www/html'
+          - './php_config/php.ini:/usr/local/etc/php/php.ini'
+        networks:
+          - servidorwebvogue
+        depends_on:
+          - databasevogue
+    
+networks:
+    servidorwebvogue:
+        driver: bridge
+        
+volumes:
+  mysqlvogue:
+  phpmyadminvogue:
+  servidorphpvogue:
